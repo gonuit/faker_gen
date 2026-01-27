@@ -1,0 +1,28 @@
+name: faker_gen
+description: "Code generator for fake factory functions. Generates fakeClassName() functions for classes annotated with @FakeIt()."
+version: 0.1.0
+repository: https://github.com/gonuit/faker_gen
+topics:
+  - testing
+  - mocking
+  - faker
+  - code-generation
+  - build-runner
+
+environment:
+  sdk: ^3.7.0
+
+dependencies:
+  analyzer: ^8.2.0
+  build: ^4.0.0
+  code_builder: ^4.0.0
+  dart_style: ^3.0.0
+  source_gen: ^4.0.0
+  faker_annotation: ^0.1.0
+
+dev_dependencies:
+  build_runner: ^2.4.15
+  build_test: ^3.5.5
+  test: ^1.25.15
+  lints: ^6.0.0
+

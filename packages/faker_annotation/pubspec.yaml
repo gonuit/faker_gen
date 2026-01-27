@@ -1,0 +1,20 @@
+name: faker_annotation
+description: "Annotations for the faker code generator. Use @FakeIt() to generate fake factory functions for data classes."
+version: 0.1.0
+repository: https://github.com/gonuit/faker_gen
+topics:
+  - testing
+  - mocking
+  - faker
+  - code-generation
+
+environment:
+  sdk: ^3.7.0
+
+dependencies:
+  faker: ^2.2.0
+  meta: ^1.11.0
+
+dev_dependencies:
+  test: ^1.25.15
+  lints: ^6.0.0
