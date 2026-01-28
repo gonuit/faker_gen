@@ -6,6 +6,7 @@ void main() {
   group('FakeAs Generator', () {
     late FakeFactoryGenerator generator;
     const config = FakerConfig(
+      seed: null,
       generateNullForNullable: false,
       nullProbability: 0.3,
     );
@@ -2439,6 +2440,88 @@ void main() {
         );
 
         expect(result, contains('f.nextInt(min: 0, max: 100)'));
+      });
+    });
+
+    // ─── Dynamic Type Support ────────────────────────────────────────────────
+
+    group('FakeAs on dynamic fields', () {
+      test('FakeAs.string on dynamic field generates correct code', () {
+        final fields = [
+          FieldInfo(
+            name: 'data',
+            typeDisplayString: 'dynamic',
+            typeInfo: TypeInfo.fakeWithFunction(
+              displayString: 'dynamic',
+              functionName: '', // Not used when fakeAsMethod is set
+            ),
+            isNullable: false,
+            isRequired: true,
+            isNamed: true,
+            fakeAsMethod: 'nextString',
+          ),
+        ];
+
+        final result = generator.generate(
+          className: 'Test',
+          fields: fields,
+          config: config,
+        );
+
+        expect(result, contains('f.nextString()'));
+        expect(result, contains('data as dynamic'));
+      });
+
+      test('FakeAs.integer on dynamic field', () {
+        final fields = [
+          FieldInfo(
+            name: 'value',
+            typeDisplayString: 'dynamic',
+            typeInfo: TypeInfo.fakeWithFunction(
+              displayString: 'dynamic',
+              functionName: '',
+            ),
+            isNullable: false,
+            isRequired: true,
+            isNamed: true,
+            fakeAsMethod: 'nextInt',
+            fakeAsArgs: 'min: 1, max: 10',
+          ),
+        ];
+
+        final result = generator.generate(
+          className: 'Test',
+          fields: fields,
+          config: config,
+        );
+
+        expect(result, contains('f.nextInt(min: 1, max: 10)'));
+      });
+
+      test('FakeAs.email on Object field', () {
+        final fields = [
+          FieldInfo(
+            name: 'contact',
+            typeDisplayString: 'Object',
+            typeInfo: TypeInfo.fakeWithFunction(
+              displayString: 'Object',
+              functionName: '',
+            ),
+            isNullable: false,
+            isRequired: true,
+            isNamed: true,
+            fakeAsMethod: 'nextEmail',
+          ),
+        ];
+
+        final result = generator.generate(
+          className: 'Test',
+          fields: fields,
+          config: config,
+        );
+
+        expect(result, contains('f.nextEmail()'));
+        expect(result, contains('contact as Object'));
       });
     });
   });

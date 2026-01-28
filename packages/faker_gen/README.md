@@ -8,10 +8,10 @@ Add to your `pubspec.yaml`:
 
 ```yaml
 dependencies:
-  faker_annotation: ^0.1.0
+  faker_annotation: ^0.3.0
 
 dev_dependencies:
-  faker_gen: ^0.1.0
+  faker_gen: ^0.3.0
   build_runner: ^2.4.0
 ```
 
@@ -20,13 +20,13 @@ dev_dependencies:
 ```dart
 import 'package:faker_annotation/faker_annotation.dart';
 
-part 'user.faker.g.dart';
+part 'user.g.dart';
 
 @FakeIt()
 class User {
   final String name;
   final int age;
-  final bool active;
+  final bool? active;
   
   User({required this.name, required this.age, required this.active});
 }
@@ -43,12 +43,19 @@ Use the generated factory:
 ```dart
 // Create a fake user with random data
 final user = fakeUser();
+print(user.name);   // Nasir Lesch
+print(user.age);    // 42
+print(user.active); // true
 
 // Override specific fields
-final customUser = fakeUser(name: 'John', age: 30);
+final customUser = fakeUser(name: 'John', active: null);
+print(customUser.name); // John
+print(customUser.age);  // 56
+print(user.active); // null
 
-// Generate multiple instances
+// Generate multiple fake users
 final users = fakeUser.many(10);
+print(users.length); // 10
 ```
 
 ## Annotations
@@ -114,6 +121,52 @@ class Article {
   final dynamic data;
   
   Article({required this.title, required this.tags, this.data});
+}
+```
+
+### @FakeValue
+
+Use a constant value for a field:
+
+```dart
+@FakeIt()
+class Config {
+  @FakeValue('production')
+  final String environment;
+  
+  @FakeValue(42)
+  final int maxRetries;
+  
+  Config({required this.environment, required this.maxRetries});
+}
+```
+
+### FakeGenerator<T>
+
+Create reusable, parameterizable generators by extending `FakeGenerator<T>`. Use them directly as annotations:
+
+```dart
+class FakeAuthorGenerator extends FakeGenerator<Author> {
+  final String? defaultDomain;
+  const FakeAuthorGenerator({this.defaultDomain});
+  
+  @override
+  Author generate(Faker faker) => Author(
+    name: faker.nextFullName(),
+    email: defaultDomain != null
+        ? '${faker.nextUsername()}@$defaultDomain'
+        : faker.nextEmail(),
+  );
+}
+
+@FakeIt()
+class Article {
+  final String title;
+  
+  @FakeAuthorGenerator(defaultDomain: 'company.com')
+  final Author author;
+  
+  Article({required this.title, required this.author});
 }
 ```
 

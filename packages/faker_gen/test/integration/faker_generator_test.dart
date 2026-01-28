@@ -3,59 +3,12 @@ import 'package:build_test/build_test.dart';
 import 'package:faker_gen/builder.dart';
 import 'package:test/test.dart';
 
-/// Inline source for faker_annotation to make it available to testBuilder.
-/// This avoids the need for complex package resolution in tests.
-const _fakeItSource = r'''
-class FakeIt {
-  const FakeIt({
-    this.generateNullForNullable = true,
-    this.nullProbability = 0.3,
-  });
-  final bool generateNullForNullable;
-  final double nullProbability;
+/// Creates a [TestReaderWriter] with all packages from the current isolate pre-loaded.
+Future<TestReaderWriter> createTestReaderWriter() async {
+  final readerWriter = TestReaderWriter(rootPackage: 'user_pkg');
+  await readerWriter.testing.loadIsolateSources();
+  return readerWriter;
 }
-
-const fakeIt = FakeIt();
-
-class FakeWith {
-  const FakeWith(this.fakeFunction);
-  final Function fakeFunction;
-}
-
-class FakeAs {
-  final String method;
-  final String returnType;
-  final String? args;
-  
-  const FakeAs.uuid() : method = 'nextUuid', returnType = 'String', args = null;
-}
-
-class FakeValue {
-  const FakeValue(this.value);
-  final Object? value;
-}
-
-class Faker {
-  Faker([int? seed]);
-  String nextString() => '';
-  String nextUuid() => '';
-  int nextInt() => 0;
-  double nextDouble() => 0.0;
-  num nextNum() => 0;
-  bool nextBool() => false;
-  DateTime nextDateTime() => DateTime.now();
-  T nextEnum<T>(List<T> values) => values.first;
-  List<T> nextListOf<T>(T Function() generator) => [];
-  T? nextNullable<T>(T Function() generator, {double nullWeight = 0.5}) => null;
-}
-
-/// A sentinel value used to distinguish "not provided" from "explicitly null".
-const Object $undefined = _Undefined();
-
-class _Undefined {
-  const _Undefined();
-}
-''';
 
 /// Matcher that decodes bytes to string and checks if it contains the given pattern.
 Matcher decodedContains(String pattern) => decodedMatches(contains(pattern));
@@ -71,9 +24,8 @@ void main() {
         await testBuilder(
           fakerBuilder(BuilderOptions.empty),
           {
-            'a|lib/faker_annotation.dart': _fakeItSource,
-            'a|lib/user.dart': r'''
-import 'faker_annotation.dart';
+            'user_pkg|lib/user.dart': r'''
+import 'package:faker_annotation/faker_annotation.dart';
 
 @FakeIt()
 class User {
@@ -83,7 +35,7 @@ class User {
 ''',
           },
           outputs: {
-            'a|lib/user.faker.g.part': decodedContainsAll([
+            'user_pkg|lib/user.faker.g.part': decodedContainsAll([
               r'$undefined', // shared sentinel
               r'abstract mixin class _$FakeUser',
               r'class _$FakeUserImpl',
@@ -91,7 +43,8 @@ class User {
               'f.nextString()',
             ]),
           },
-          rootPackage: 'a',
+          rootPackage: 'user_pkg',
+          readerWriter: await createTestReaderWriter(),
         );
       });
 
@@ -99,9 +52,8 @@ class User {
         await testBuilder(
           fakerBuilder(BuilderOptions.empty),
           {
-            'a|lib/faker_annotation.dart': _fakeItSource,
-            'a|lib/counter.dart': r'''
-import 'faker_annotation.dart';
+            'user_pkg|lib/counter.dart': r'''
+import 'package:faker_annotation/faker_annotation.dart';
 
 @FakeIt()
 class Counter {
@@ -111,9 +63,10 @@ class Counter {
 ''',
           },
           outputs: {
-            'a|lib/counter.faker.g.part': decodedContains('f.nextInt()'),
+            'user_pkg|lib/counter.faker.g.part': decodedContains('f.nextInt()'),
           },
-          rootPackage: 'a',
+          rootPackage: 'user_pkg',
+          readerWriter: await createTestReaderWriter(),
         );
       });
 
@@ -121,9 +74,8 @@ class Counter {
         await testBuilder(
           fakerBuilder(BuilderOptions.empty),
           {
-            'a|lib/faker_annotation.dart': _fakeItSource,
-            'a|lib/measurement.dart': r'''
-import 'faker_annotation.dart';
+            'user_pkg|lib/measurement.dart': r'''
+import 'package:faker_annotation/faker_annotation.dart';
 
 @FakeIt()
 class Measurement {
@@ -133,12 +85,13 @@ class Measurement {
 ''',
           },
           outputs: {
-            'a|lib/measurement.faker.g.part': decodedContainsAll([
+            'user_pkg|lib/measurement.faker.g.part': decodedContainsAll([
               'f.nextDouble()',
               '(value as num).toDouble()',
             ]),
           },
-          rootPackage: 'a',
+          rootPackage: 'user_pkg',
+          readerWriter: await createTestReaderWriter(),
         );
       });
 
@@ -146,9 +99,8 @@ class Measurement {
         await testBuilder(
           fakerBuilder(BuilderOptions.empty),
           {
-            'a|lib/faker_annotation.dart': _fakeItSource,
-            'a|lib/flag.dart': r'''
-import 'faker_annotation.dart';
+            'user_pkg|lib/flag.dart': r'''
+import 'package:faker_annotation/faker_annotation.dart';
 
 @FakeIt()
 class Flag {
@@ -157,8 +109,9 @@ class Flag {
 }
 ''',
           },
-          outputs: {'a|lib/flag.faker.g.part': decodedContains('f.nextBool()')},
-          rootPackage: 'a',
+          outputs: {'user_pkg|lib/flag.faker.g.part': decodedContains('f.nextBool()')},
+          rootPackage: 'user_pkg',
+          readerWriter: await createTestReaderWriter(),
         );
       });
 
@@ -166,9 +119,8 @@ class Flag {
         await testBuilder(
           fakerBuilder(BuilderOptions.empty),
           {
-            'a|lib/faker_annotation.dart': _fakeItSource,
-            'a|lib/person.dart': r'''
-import 'faker_annotation.dart';
+            'user_pkg|lib/person.dart': r'''
+import 'package:faker_annotation/faker_annotation.dart';
 
 @FakeIt()
 class Person {
@@ -180,7 +132,7 @@ class Person {
 ''',
           },
           outputs: {
-            'a|lib/person.faker.g.part': decodedContainsAll([
+            'user_pkg|lib/person.faker.g.part': decodedContainsAll([
               'f.nextString()',
               'f.nextInt()',
               'f.nextBool()',
@@ -189,7 +141,8 @@ class Person {
               'active:',
             ]),
           },
-          rootPackage: 'a',
+          rootPackage: 'user_pkg',
+          readerWriter: await createTestReaderWriter(),
         );
       });
     });
@@ -201,9 +154,8 @@ class Person {
           await testBuilder(
             fakerBuilder(BuilderOptions.empty),
             {
-              'a|lib/faker_annotation.dart': _fakeItSource,
-              'a|lib/profile.dart': r'''
-import 'faker_annotation.dart';
+              'user_pkg|lib/profile.dart': r'''
+import 'package:faker_annotation/faker_annotation.dart';
 
 @FakeIt(generateNullForNullable: true, nullProbability: 0.3)
 class Profile {
@@ -213,12 +165,13 @@ class Profile {
 ''',
             },
             outputs: {
-              'a|lib/profile.faker.g.part': decodedContainsAll([
+              'user_pkg|lib/profile.faker.g.part': decodedContainsAll([
                 'f.nextNullable',
                 'nullWeight: 0.3',
               ]),
             },
-            rootPackage: 'a',
+            rootPackage: 'user_pkg',
+            readerWriter: await createTestReaderWriter(),
           );
         },
       );
@@ -229,9 +182,8 @@ class Profile {
           await testBuilder(
             fakerBuilder(BuilderOptions.empty),
             {
-              'a|lib/faker_annotation.dart': _fakeItSource,
-              'a|lib/profile.dart': r'''
-import 'faker_annotation.dart';
+              'user_pkg|lib/profile.dart': r'''
+import 'package:faker_annotation/faker_annotation.dart';
 
 @FakeIt(generateNullForNullable: false)
 class Profile {
@@ -241,9 +193,10 @@ class Profile {
 ''',
             },
             outputs: {
-              'a|lib/profile.faker.g.part': decodedContains('f.nextString()'),
+              'user_pkg|lib/profile.faker.g.part': decodedContains('f.nextString()'),
             },
-            rootPackage: 'a',
+            rootPackage: 'user_pkg',
+            readerWriter: await createTestReaderWriter(),
           );
         },
       );
@@ -254,9 +207,8 @@ class Profile {
         await testBuilder(
           fakerBuilder(BuilderOptions.empty),
           {
-            'a|lib/faker_annotation.dart': _fakeItSource,
-            'a|lib/event.dart': r'''
-import 'faker_annotation.dart';
+            'user_pkg|lib/event.dart': r'''
+import 'package:faker_annotation/faker_annotation.dart';
 
 @FakeIt()
 class Event {
@@ -266,9 +218,10 @@ class Event {
 ''',
           },
           outputs: {
-            'a|lib/event.faker.g.part': decodedContains('f.nextDateTime()'),
+            'user_pkg|lib/event.faker.g.part': decodedContains('f.nextDateTime()'),
           },
-          rootPackage: 'a',
+          rootPackage: 'user_pkg',
+          readerWriter: await createTestReaderWriter(),
         );
       });
     });
@@ -278,9 +231,8 @@ class Event {
         await testBuilder(
           fakerBuilder(BuilderOptions.empty),
           {
-            'a|lib/faker_annotation.dart': _fakeItSource,
-            'a|lib/tags.dart': r'''
-import 'faker_annotation.dart';
+            'user_pkg|lib/tags.dart': r'''
+import 'package:faker_annotation/faker_annotation.dart';
 
 @FakeIt()
 class Tags {
@@ -290,13 +242,14 @@ class Tags {
 ''',
           },
           outputs: {
-            'a|lib/tags.faker.g.part': decodedContainsAll([
+            'user_pkg|lib/tags.faker.g.part': decodedContainsAll([
               'f.nextListOf',
               'f.nextString()',
               'values as List<String>',
             ]),
           },
-          rootPackage: 'a',
+          rootPackage: 'user_pkg',
+          readerWriter: await createTestReaderWriter(),
         );
       });
     });
@@ -306,9 +259,8 @@ class Tags {
         await testBuilder(
           fakerBuilder(BuilderOptions.empty),
           {
-            'a|lib/faker_annotation.dart': _fakeItSource,
-            'a|lib/scores.dart': r'''
-import 'faker_annotation.dart';
+            'user_pkg|lib/scores.dart': r'''
+import 'package:faker_annotation/faker_annotation.dart';
 
 @FakeIt()
 class Scores {
@@ -318,7 +270,7 @@ class Scores {
 ''',
           },
           outputs: {
-            'a|lib/scores.faker.g.part': decodedContainsAll([
+            'user_pkg|lib/scores.faker.g.part': decodedContainsAll([
               'Map.fromEntries',
               'MapEntry',
               'f.nextString()',
@@ -326,7 +278,8 @@ class Scores {
               'values as Map<String, int>',
             ]),
           },
-          rootPackage: 'a',
+          rootPackage: 'user_pkg',
+          readerWriter: await createTestReaderWriter(),
         );
       });
     });
@@ -336,9 +289,8 @@ class Scores {
         await testBuilder(
           fakerBuilder(BuilderOptions.empty),
           {
-            'a|lib/faker_annotation.dart': _fakeItSource,
-            'a|lib/unique_tags.dart': r'''
-import 'faker_annotation.dart';
+            'user_pkg|lib/unique_tags.dart': r'''
+import 'package:faker_annotation/faker_annotation.dart';
 
 @FakeIt()
 class UniqueTags {
@@ -348,14 +300,15 @@ class UniqueTags {
 ''',
           },
           outputs: {
-            'a|lib/unique_tags.faker.g.part': decodedContainsAll([
+            'user_pkg|lib/unique_tags.faker.g.part': decodedContainsAll([
               'f.nextListOf',
               'f.nextString()',
               '.toSet()',
               'tags as Set<String>',
             ]),
           },
-          rootPackage: 'a',
+          rootPackage: 'user_pkg',
+          readerWriter: await createTestReaderWriter(),
         );
       });
 
@@ -363,9 +316,8 @@ class UniqueTags {
         await testBuilder(
           fakerBuilder(BuilderOptions.empty),
           {
-            'a|lib/faker_annotation.dart': _fakeItSource,
-            'a|lib/unique_ids.dart': r'''
-import 'faker_annotation.dart';
+            'user_pkg|lib/unique_ids.dart': r'''
+import 'package:faker_annotation/faker_annotation.dart';
 
 @FakeIt()
 class UniqueIds {
@@ -375,13 +327,14 @@ class UniqueIds {
 ''',
           },
           outputs: {
-            'a|lib/unique_ids.faker.g.part': decodedContainsAll([
+            'user_pkg|lib/unique_ids.faker.g.part': decodedContainsAll([
               'f.nextListOf',
               'f.nextInt()',
               '.toSet()',
             ]),
           },
-          rootPackage: 'a',
+          rootPackage: 'user_pkg',
+          readerWriter: await createTestReaderWriter(),
         );
       });
     });
@@ -391,9 +344,8 @@ class UniqueIds {
         await testBuilder(
           fakerBuilder(BuilderOptions.empty),
           {
-            'a|lib/faker_annotation.dart': _fakeItSource,
-            'a|lib/status.dart': r'''
-import 'faker_annotation.dart';
+            'user_pkg|lib/status.dart': r'''
+import 'package:faker_annotation/faker_annotation.dart';
 
 enum Status { active, inactive, pending }
 
@@ -405,12 +357,13 @@ class Task {
 ''',
           },
           outputs: {
-            'a|lib/status.faker.g.part': decodedContainsAll([
+            'user_pkg|lib/status.faker.g.part': decodedContainsAll([
               'f.nextEnum(Status.values)',
               'status as Status',
             ]),
           },
-          rootPackage: 'a',
+          rootPackage: 'user_pkg',
+          readerWriter: await createTestReaderWriter(),
         );
       });
 
@@ -418,9 +371,8 @@ class Task {
         await testBuilder(
           fakerBuilder(BuilderOptions.empty),
           {
-            'a|lib/faker_annotation.dart': _fakeItSource,
-            'a|lib/status.dart': r'''
-import 'faker_annotation.dart';
+            'user_pkg|lib/status.dart': r'''
+import 'package:faker_annotation/faker_annotation.dart';
 
 enum Priority { low, medium, high }
 
@@ -432,12 +384,13 @@ class Task {
 ''',
           },
           outputs: {
-            'a|lib/status.faker.g.part': decodedContainsAll([
+            'user_pkg|lib/status.faker.g.part': decodedContainsAll([
               'f.nextNullable',
               'f.nextEnum(Priority.values)',
             ]),
           },
-          rootPackage: 'a',
+          rootPackage: 'user_pkg',
+          readerWriter: await createTestReaderWriter(),
         );
       });
     });
@@ -447,9 +400,8 @@ class Task {
         await testBuilder(
           fakerBuilder(BuilderOptions.empty),
           {
-            'a|lib/faker_annotation.dart': _fakeItSource,
-            'a|lib/point.dart': r'''
-import 'faker_annotation.dart';
+            'user_pkg|lib/point.dart': r'''
+import 'package:faker_annotation/faker_annotation.dart';
 
 @FakeIt()
 class Point {
@@ -460,14 +412,15 @@ class Point {
 ''',
           },
           outputs: {
-            'a|lib/point.faker.g.part': decodedContainsAll([
+            'user_pkg|lib/point.faker.g.part': decodedContainsAll([
               'double x',
               'double y',
               'f.nextDouble()',
               'Point(',
             ]),
           },
-          rootPackage: 'a',
+          rootPackage: 'user_pkg',
+          readerWriter: await createTestReaderWriter(),
         );
       });
 
@@ -477,9 +430,8 @@ class Point {
           await testBuilder(
             fakerBuilder(BuilderOptions.empty),
             {
-              'a|lib/faker_annotation.dart': _fakeItSource,
-              'a|lib/rect.dart': r'''
-import 'faker_annotation.dart';
+              'user_pkg|lib/rect.dart': r'''
+import 'package:faker_annotation/faker_annotation.dart';
 
 @FakeIt()
 class Rect {
@@ -492,7 +444,7 @@ class Rect {
 ''',
             },
             outputs: {
-              'a|lib/rect.faker.g.part': decodedContainsAll([
+              'user_pkg|lib/rect.faker.g.part': decodedContainsAll([
                 'double x',
                 'double y',
                 'double width',
@@ -500,7 +452,8 @@ class Rect {
                 'Rect(',
               ]),
             },
-            rootPackage: 'a',
+            rootPackage: 'user_pkg',
+            readerWriter: await createTestReaderWriter(),
           );
         },
       );
@@ -511,9 +464,8 @@ class Rect {
         await testBuilder(
           fakerBuilder(BuilderOptions.empty),
           {
-            'a|lib/faker_annotation.dart': _fakeItSource,
-            'a|lib/nullable_list.dart': r'''
-import 'faker_annotation.dart';
+            'user_pkg|lib/nullable_list.dart': r'''
+import 'package:faker_annotation/faker_annotation.dart';
 
 @FakeIt()
 class NullableList {
@@ -523,13 +475,14 @@ class NullableList {
 ''',
           },
           outputs: {
-            'a|lib/nullable_list.faker.g.part': decodedContainsAll([
+            'user_pkg|lib/nullable_list.faker.g.part': decodedContainsAll([
               'f.nextListOf',
               'f.nextNullable',
               'f.nextString()',
             ]),
           },
-          rootPackage: 'a',
+          rootPackage: 'user_pkg',
+          readerWriter: await createTestReaderWriter(),
         );
       });
 
@@ -537,9 +490,8 @@ class NullableList {
         await testBuilder(
           fakerBuilder(BuilderOptions.empty),
           {
-            'a|lib/faker_annotation.dart': _fakeItSource,
-            'a|lib/nullable_map.dart': r'''
-import 'faker_annotation.dart';
+            'user_pkg|lib/nullable_map.dart': r'''
+import 'package:faker_annotation/faker_annotation.dart';
 
 @FakeIt()
 class NullableMap {
@@ -549,14 +501,15 @@ class NullableMap {
 ''',
           },
           outputs: {
-            'a|lib/nullable_map.faker.g.part': decodedContainsAll([
+            'user_pkg|lib/nullable_map.faker.g.part': decodedContainsAll([
               'Map.fromEntries',
               'f.nextString()',
               'f.nextNullable',
               'f.nextInt()',
             ]),
           },
-          rootPackage: 'a',
+          rootPackage: 'user_pkg',
+          readerWriter: await createTestReaderWriter(),
         );
       });
     });
@@ -566,9 +519,8 @@ class NullableMap {
         await testBuilder(
           fakerBuilder(BuilderOptions.empty),
           {
-            'a|lib/faker_annotation.dart': _fakeItSource,
-            'a|lib/custom.dart': r'''
-import 'faker_annotation.dart';
+            'user_pkg|lib/custom.dart': r'''
+import 'package:faker_annotation/faker_annotation.dart';
 
 String customNameGenerator(Faker f) => 'CustomName';
 
@@ -581,11 +533,12 @@ class CustomUser {
 ''',
           },
           outputs: {
-            'a|lib/custom.faker.g.part': decodedContains(
+            'user_pkg|lib/custom.faker.g.part': decodedContains(
               'customNameGenerator(f)',
             ),
           },
-          rootPackage: 'a',
+          rootPackage: 'user_pkg',
+          readerWriter: await createTestReaderWriter(),
         );
       });
     });
@@ -595,9 +548,8 @@ class CustomUser {
         await testBuilder(
           fakerBuilder(BuilderOptions.empty),
           {
-            'a|lib/faker_annotation.dart': _fakeItSource,
-            'a|lib/config.dart': r'''
-import 'faker_annotation.dart';
+            'user_pkg|lib/config.dart': r'''
+import 'package:faker_annotation/faker_annotation.dart';
 
 @FakeIt()
 class Config {
@@ -608,12 +560,13 @@ class Config {
 ''',
           },
           outputs: {
-            'a|lib/config.faker.g.part': decodedContainsAll([
+            'user_pkg|lib/config.faker.g.part': decodedContainsAll([
               "identical(environment, \$undefined)",
               "'production'",
             ]),
           },
-          rootPackage: 'a',
+          rootPackage: 'user_pkg',
+          readerWriter: await createTestReaderWriter(),
         );
       });
 
@@ -621,9 +574,8 @@ class Config {
         await testBuilder(
           fakerBuilder(BuilderOptions.empty),
           {
-            'a|lib/faker_annotation.dart': _fakeItSource,
-            'a|lib/settings.dart': r'''
-import 'faker_annotation.dart';
+            'user_pkg|lib/settings.dart': r'''
+import 'package:faker_annotation/faker_annotation.dart';
 
 @FakeIt()
 class Settings {
@@ -634,12 +586,13 @@ class Settings {
 ''',
           },
           outputs: {
-            'a|lib/settings.faker.g.part': decodedContainsAll([
+            'user_pkg|lib/settings.faker.g.part': decodedContainsAll([
               'identical(maxRetries, \$undefined)',
               '? 42',
             ]),
           },
-          rootPackage: 'a',
+          rootPackage: 'user_pkg',
+          readerWriter: await createTestReaderWriter(),
         );
       });
 
@@ -647,9 +600,8 @@ class Settings {
         await testBuilder(
           fakerBuilder(BuilderOptions.empty),
           {
-            'a|lib/faker_annotation.dart': _fakeItSource,
-            'a|lib/feature.dart': r'''
-import 'faker_annotation.dart';
+            'user_pkg|lib/feature.dart': r'''
+import 'package:faker_annotation/faker_annotation.dart';
 
 @FakeIt()
 class Feature {
@@ -660,12 +612,13 @@ class Feature {
 ''',
           },
           outputs: {
-            'a|lib/feature.faker.g.part': decodedContainsAll([
+            'user_pkg|lib/feature.faker.g.part': decodedContainsAll([
               'identical(enabled, \$undefined)',
               '? true',
             ]),
           },
-          rootPackage: 'a',
+          rootPackage: 'user_pkg',
+          readerWriter: await createTestReaderWriter(),
         );
       });
 
@@ -673,9 +626,8 @@ class Feature {
         await testBuilder(
           fakerBuilder(BuilderOptions.empty),
           {
-            'a|lib/faker_annotation.dart': _fakeItSource,
-            'a|lib/optional.dart': r'''
-import 'faker_annotation.dart';
+            'user_pkg|lib/optional.dart': r'''
+import 'package:faker_annotation/faker_annotation.dart';
 
 @FakeIt()
 class Optional {
@@ -686,13 +638,14 @@ class Optional {
 ''',
           },
           outputs: {
-            'a|lib/optional.faker.g.part': decodedContainsAll([
+            'user_pkg|lib/optional.faker.g.part': decodedContainsAll([
               'identical(maybeValue, \$undefined)',
               '? null',
               ': maybeValue as String?',
             ]),
           },
-          rootPackage: 'a',
+          rootPackage: 'user_pkg',
+          readerWriter: await createTestReaderWriter(),
         );
       });
     });
@@ -702,9 +655,8 @@ class Optional {
         await testBuilder(
           fakerBuilder(BuilderOptions.empty),
           {
-            'a|lib/faker_annotation.dart': _fakeItSource,
-            'a|lib/item.dart': r'''
-import 'faker_annotation.dart';
+            'user_pkg|lib/item.dart': r'''
+import 'package:faker_annotation/faker_annotation.dart';
 
 @FakeIt()
 class Item {
@@ -714,12 +666,13 @@ class Item {
 ''',
           },
           outputs: {
-            'a|lib/item.faker.g.part': decodedContainsAll([
+            'user_pkg|lib/item.faker.g.part': decodedContainsAll([
               r'$undefined',
               r'identical(id, $undefined)',
             ]),
           },
-          rootPackage: 'a',
+          rootPackage: 'user_pkg',
+          readerWriter: await createTestReaderWriter(),
         );
       });
 
@@ -727,9 +680,8 @@ class Item {
         await testBuilder(
           fakerBuilder(BuilderOptions.empty),
           {
-            'a|lib/faker_annotation.dart': _fakeItSource,
-            'a|lib/item.dart': r'''
-import 'faker_annotation.dart';
+            'user_pkg|lib/item.dart': r'''
+import 'package:faker_annotation/faker_annotation.dart';
 
 @FakeIt()
 class Item {
@@ -739,7 +691,7 @@ class Item {
 ''',
           },
           outputs: {
-            'a|lib/item.faker.g.part': decodedContainsAll([
+            'user_pkg|lib/item.faker.g.part': decodedContainsAll([
               '/// Creates a fake instance of [Item]',
               r'abstract mixin class _$FakeItem',
               'Item call({',
@@ -747,7 +699,8 @@ class Item {
               'String id',
             ]),
           },
-          rootPackage: 'a',
+          rootPackage: 'user_pkg',
+          readerWriter: await createTestReaderWriter(),
         );
       });
 
@@ -755,9 +708,8 @@ class Item {
         await testBuilder(
           fakerBuilder(BuilderOptions.empty),
           {
-            'a|lib/faker_annotation.dart': _fakeItSource,
-            'a|lib/item.dart': r'''
-import 'faker_annotation.dart';
+            'user_pkg|lib/item.dart': r'''
+import 'package:faker_annotation/faker_annotation.dart';
 
 @FakeIt()
 class Item {
@@ -767,7 +719,7 @@ class Item {
 ''',
           },
           outputs: {
-            'a|lib/item.faker.g.part': decodedContainsAll([
+            'user_pkg|lib/item.faker.g.part': decodedContainsAll([
               r'class _$FakeItemImpl with _$FakeItem',
               r'const _$FakeItemImpl();',
               '@override',
@@ -775,7 +727,8 @@ class Item {
               r'identical(id, $undefined)',
             ]),
           },
-          rootPackage: 'a',
+          rootPackage: 'user_pkg',
+          readerWriter: await createTestReaderWriter(),
         );
       });
 
@@ -783,9 +736,8 @@ class Item {
         await testBuilder(
           fakerBuilder(BuilderOptions.empty),
           {
-            'a|lib/faker_annotation.dart': _fakeItSource,
-            'a|lib/item.dart': r'''
-import 'faker_annotation.dart';
+            'user_pkg|lib/item.dart': r'''
+import 'package:faker_annotation/faker_annotation.dart';
 
 @FakeIt()
 class Item {
@@ -795,22 +747,24 @@ class Item {
 ''',
           },
           outputs: {
-            'a|lib/item.faker.g.part': decodedContainsAll([
+            'user_pkg|lib/item.faker.g.part': decodedContainsAll([
               '/// Fake factory for [Item]',
               r'const fakeItem = _$FakeItemImpl();',
             ]),
           },
-          rootPackage: 'a',
+          rootPackage: 'user_pkg',
+          readerWriter: await createTestReaderWriter(),
         );
       });
 
-      test('only generates for constructor parameters, not all class fields', () async {
-        await testBuilder(
-          fakerBuilder(BuilderOptions.empty),
-          {
-            'a|lib/faker_annotation.dart': _fakeItSource,
-            'a|lib/user.dart': r'''
-import 'faker_annotation.dart';
+      test(
+        'only generates for constructor parameters, not all class fields',
+        () async {
+          await testBuilder(
+            fakerBuilder(BuilderOptions.empty),
+            {
+              'user_pkg|lib/user.dart': r'''
+import 'package:faker_annotation/faker_annotation.dart';
 
 @FakeIt()
 class User {
@@ -821,30 +775,31 @@ class User {
   User({required this.name, required this.age});
 }
 ''',
-          },
-          outputs: {
-            'a|lib/user.faker.g.part': allOf([
-              decodedContainsAll([
-                'String name',
-                'int age',
-                'name: identical(name, \$undefined) ? f.nextString() : name as String',
-                'age: identical(age, \$undefined) ? f.nextInt() : age as int',
+            },
+            outputs: {
+              'user_pkg|lib/user.faker.g.part': allOf([
+                decodedContainsAll([
+                  'String name',
+                  'int age',
+                  'name: identical(name, \$undefined) ? f.nextString() : name as String',
+                  'age: identical(age, \$undefined) ? f.nextInt() : age as int',
+                ]),
+                // Should NOT contain nickname since it's not in constructor
+                isNot(decodedContains('nickname')),
               ]),
-              // Should NOT contain nickname since it's not in constructor
-              isNot(decodedContains('nickname')),
-            ]),
-          },
-          rootPackage: 'a',
-        );
-      });
+            },
+            rootPackage: 'user_pkg',
+            readerWriter: await createTestReaderWriter(),
+          );
+        },
+      );
 
       test('supports annotations on super constructor parameters', () async {
         await testBuilder(
           fakerBuilder(BuilderOptions.empty),
           {
-            'a|lib/faker_annotation.dart': _fakeItSource,
-            'a|lib/models.dart': r'''
-import 'faker_annotation.dart';
+            'user_pkg|lib/models.dart': r'''
+import 'package:faker_annotation/faker_annotation.dart';
 
 Map<String, dynamic> mockPayment(Faker f) => {'method': 'card'};
 
@@ -869,14 +824,15 @@ class Order extends BaseOrder {
 ''',
           },
           outputs: {
-            'a|lib/models.faker.g.part': decodedContainsAll([
+            'user_pkg|lib/models.faker.g.part': decodedContainsAll([
               // Should use @FakeAs.uuid() on the orderId parameter
               'f.nextUuid()',
               // Should use @FakeWith(mockPayment) on the payment parameter
               'mockPayment(f)',
             ]),
           },
-          rootPackage: 'a',
+          rootPackage: 'user_pkg',
+          readerWriter: await createTestReaderWriter(),
         );
       });
 
@@ -884,9 +840,8 @@ class Order extends BaseOrder {
         await testBuilder(
           fakerBuilder(BuilderOptions.empty),
           {
-            'a|lib/faker_annotation.dart': _fakeItSource,
-            'a|lib/models.dart': r'''
-import 'faker_annotation.dart';
+            'user_pkg|lib/models.dart': r'''
+import 'package:faker_annotation/faker_annotation.dart';
 
 Map<String, dynamic> mockPayment(Faker f) => {'method': 'card'};
 
@@ -912,14 +867,15 @@ class Order extends BaseOrder {
 ''',
           },
           outputs: {
-            'a|lib/models.faker.g.part': decodedContainsAll([
+            'user_pkg|lib/models.faker.g.part': decodedContainsAll([
               // Should find @FakeAs.uuid() on BaseOrder.orderId
               'f.nextUuid()',
               // Should find @FakeWith(mockPayment) on BaseOrder.payment
               'mockPayment(f)',
             ]),
           },
-          rootPackage: 'a',
+          rootPackage: 'user_pkg',
+          readerWriter: await createTestReaderWriter(),
         );
       });
 
@@ -927,9 +883,8 @@ class Order extends BaseOrder {
         await testBuilder(
           fakerBuilder(BuilderOptions.empty),
           {
-            'a|lib/faker_annotation.dart': _fakeItSource,
-            'a|lib/app_file.dart': r'''
-import 'faker_annotation.dart';
+            'user_pkg|lib/app_file.dart': r'''
+import 'package:faker_annotation/faker_annotation.dart';
 
 // Simulating Freezed-generated mixin
 mixin _$AppFile {
@@ -957,29 +912,27 @@ class _AppFile with _$AppFile implements AppFile {
 ''',
           },
           outputs: {
-            'a|lib/app_file.faker.g.part': allOf([
-              decodedContainsAll([
-                'fakeAppFile',
-                'fileName',
-                'fileType',
-              ]),
+            'user_pkg|lib/app_file.faker.g.part': allOf([
+              decodedContainsAll(['fakeAppFile', 'fileName', 'fileType']),
               // IMPORTANT: Should use public AppFile constructor, NOT _AppFile
               decodedContains('return AppFile('),
               // Should NOT use the private redirected class
               isNot(decodedContains('return _AppFile(')),
             ]),
           },
-          rootPackage: 'a',
+          rootPackage: 'user_pkg',
+          readerWriter: await createTestReaderWriter(),
         );
       });
 
-      test('supports annotations on Freezed-style factory constructor params', () async {
-        await testBuilder(
-          fakerBuilder(BuilderOptions.empty),
-          {
-            'a|lib/faker_annotation.dart': _fakeItSource,
-            'a|lib/app_file.dart': r'''
-import 'faker_annotation.dart';
+      test(
+        'supports annotations on Freezed-style factory constructor params',
+        () async {
+          await testBuilder(
+            fakerBuilder(BuilderOptions.empty),
+            {
+              'user_pkg|lib/app_file.dart': r'''
+import 'package:faker_annotation/faker_annotation.dart';
 
 String fakeFileName(Faker f) => 'test.pdf';
 
@@ -1007,18 +960,20 @@ class _AppFile with _$AppFile implements AppFile {
   final String? fileId;
 }
 ''',
-          },
-          outputs: {
-            'a|lib/app_file.faker.g.part': decodedContainsAll([
-              // Should use @FakeWith on factory constructor param
-              'fakeFileName(f)',
-              // Should use @FakeAs.uuid() on factory constructor param
-              'f.nextUuid()',
-            ]),
-          },
-          rootPackage: 'a',
-        );
-      });
+            },
+            outputs: {
+              'user_pkg|lib/app_file.faker.g.part': decodedContainsAll([
+                // Should use @FakeWith on factory constructor param
+                'fakeFileName(f)',
+                // Should use @FakeAs.uuid() on factory constructor param
+                'f.nextUuid()',
+              ]),
+            },
+            rootPackage: 'user_pkg',
+            readerWriter: await createTestReaderWriter(),
+          );
+        },
+      );
     });
   });
 }

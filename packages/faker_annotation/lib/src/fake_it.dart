@@ -59,15 +59,23 @@ import 'package:meta/meta_meta.dart';
 class FakeIt {
   /// Creates a [FakeIt] annotation.
   ///
+  /// [seed] - Optional seed for the Faker's random number generator.
+  /// When set, generates reproducible fake data. If null, random values
+  /// are generated each time.
+  ///
   /// [generateNullForNullable] - If true, nullable fields have a chance to be
   /// null when not explicitly provided. Defaults to true.
   ///
   /// [nullProbability] - The probability (0.0 to 1.0) that a nullable field
   /// will be null when [generateNullForNullable] is true. Defaults to 0.3.
   const FakeIt({
+    this.seed,
     this.generateNullForNullable = true,
     this.nullProbability = 0.3,
   });
+
+  /// Optional seed for reproducible fake data generation.
+  final int? seed;
 
   /// Whether to randomly generate null for nullable fields.
   final bool generateNullForNullable;

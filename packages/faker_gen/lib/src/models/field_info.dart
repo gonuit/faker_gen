@@ -18,6 +18,8 @@ final class FieldInfo {
     this.fakeAsArgs,
     this.fakeValue,
     this.hasFakeValue = false,
+    this.fakeGeneratorClass,
+    this.fakeGeneratorArgs,
   });
 
   /// The parameter/field name.
@@ -50,4 +52,10 @@ final class FieldInfo {
 
   /// Whether @FakeValue annotation was present (distinguishes null value from no annotation).
   final bool hasFakeValue;
+
+  /// The FakeGenerator subclass name (e.g., 'AuthorGenerator').
+  final String? fakeGeneratorClass;
+
+  /// The constructor arguments for the FakeGenerator (e.g., 'min: 1, max: 10').
+  final String? fakeGeneratorArgs;
 }

@@ -3,9 +3,13 @@
 /// Extracted from [FakeIt] annotation to decouple config from annotation.
 class FakerConfig {
   const FakerConfig({
+    this.seed,
     required this.generateNullForNullable,
     required this.nullProbability,
   });
+
+  /// Optional seed for reproducible fake data generation.
+  final int? seed;
 
   /// Whether to randomly generate null for nullable fields.
   final bool generateNullForNullable;

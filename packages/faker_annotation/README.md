@@ -6,7 +6,7 @@ Annotations and utilities for the [faker_gen](https://pub.dev/packages/faker_gen
 
 ```yaml
 dependencies:
-  faker_annotation: ^0.1.0
+  faker_annotation: ^0.3.1
 ```
 
 ## Annotations
@@ -60,6 +60,50 @@ class Article {
   final List<String> tags;
   
   Article({required this.tags});
+}
+```
+
+### @FakeValue
+
+Use a constant value for a field.
+
+```dart
+@FakeIt()
+class Config {
+  @FakeValue('production')
+  final String environment;
+  
+  @FakeValue(42)
+  final int maxRetries;
+  
+  Config({required this.environment, required this.maxRetries});
+}
+```
+
+### FakeGenerator<T>
+
+Create reusable, parameterizable generators by extending `FakeGenerator<T>`.
+
+```dart
+class FakeAuthorGenerator extends FakeGenerator<Author> {
+  final String? defaultDomain;
+  const FakeAuthorGenerator({this.defaultDomain});
+  
+  @override
+  Author generate(Faker faker) => Author(
+    name: faker.nextFullName(),
+    email: defaultDomain != null
+        ? '${faker.nextUsername()}@$defaultDomain'
+        : faker.nextEmail(),
+  );
+}
+
+@FakeIt()
+class Article {
+  @FakeAuthorGenerator(defaultDomain: 'company.com')
+  final Author author;
+  
+  Article({required this.author});
 }
 ```
 

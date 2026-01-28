@@ -35,6 +35,8 @@ class FakerGenerator extends GeneratorForAnnotation<FakeIt> {
     final constructor = _findConstructor(classElement);
     final fields = _analyzeFields(constructor, classElement);
 
+    final seedValue = annotation.read('seed');
+    final seed = seedValue.isNull ? null : seedValue.intValue;
     final generateNullForNullable =
         annotation.read('generateNullForNullable').boolValue;
     final nullProbability = annotation.read('nullProbability').doubleValue;
@@ -47,6 +49,7 @@ class FakerGenerator extends GeneratorForAnnotation<FakeIt> {
     }
 
     final config = FakerConfig(
+      seed: seed,
       generateNullForNullable: generateNullForNullable,
       nullProbability: nullProbability,
     );

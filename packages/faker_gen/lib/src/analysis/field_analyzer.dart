@@ -1,5 +1,6 @@
 import 'package:analyzer/dart/element/element.dart';
 import 'package:analyzer/dart/element/nullability_suffix.dart';
+import 'package:analyzer/dart/element/type.dart';
 import 'package:faker_annotation/faker_annotation.dart';
 import 'package:source_gen/source_gen.dart';
 
@@ -13,15 +14,29 @@ import 'type_analyzer.dart';
 /// - @FakeWith annotation detection on corresponding fields
 /// - @FakeAs annotation detection for String fields
 /// - @FakeValue annotation detection for constant values
+/// - FakeGenerator<T> subclass detection for custom generators
 /// - Type analysis delegation to [TypeAnalyzer]
 class FieldAnalyzer {
   FieldAnalyzer({TypeAnalyzer? typeAnalyzer})
     : _typeAnalyzer = typeAnalyzer ?? TypeAnalyzer();
 
   final TypeAnalyzer _typeAnalyzer;
-  static const _fakeWithChecker = TypeChecker.typeNamed(FakeWith);
-  static const _fakeAsChecker = TypeChecker.typeNamed(FakeAs);
-  static const _fakeValueChecker = TypeChecker.typeNamed(FakeValue);
+  static const _fakeWithChecker = TypeChecker.typeNamed(
+    FakeWith,
+    inPackage: 'faker_annotation',
+  );
+  static const _fakeAsChecker = TypeChecker.typeNamed(
+    FakeAs,
+    inPackage: 'faker_annotation',
+  );
+  static const _fakeValueChecker = TypeChecker.typeNamed(
+    FakeValue,
+    inPackage: 'faker_annotation',
+  );
+  static const _fakeGeneratorChecker = TypeChecker.typeNamed(
+    FakeGenerator,
+    inPackage: 'faker_annotation',
+  );
 
   /// Finds a field by name in the class hierarchy (current class and all superclasses).
   FieldElement? _findFieldInHierarchy(
@@ -73,24 +88,39 @@ class FieldAnalyzer {
       param,
     );
 
+    // Check for FakeGenerator<T> subclass annotation on the field or parameter
+    final fakeGeneratorInfo = _findFakeGenerator(paramName, classElement, param);
+
     // Check for @FakeAs annotation on the corresponding field or parameter
     final fakeAsInfo = _findFakeAsInfo(paramName, classElement, type, param);
 
     // Check for @FakeValue annotation on the corresponding field or parameter
     final fakeValueInfo = _findFakeValue(paramName, classElement, param);
 
-    // Determine type info - use @FakeWith or @FakeValue if present, else analyze type
+    // Determine type info - use @FakeWith, FakeGenerator, @FakeValue, or @FakeAs on dynamic if present
     final TypeInfo typeInfo;
     if (fakeWithFunctionName != null) {
       typeInfo = TypeInfo.fakeWithFunction(
         displayString: type.getDisplayString(),
         functionName: fakeWithFunctionName,
       );
+    } else if (fakeGeneratorInfo != null) {
+      // Skip type analysis for FakeGenerator - we'll instantiate and call generate()
+      typeInfo = TypeInfo.fakeWithFunction(
+        displayString: type.getDisplayString(),
+        functionName: '', // Not used, fakeGeneratorClass will be used instead
+      );
     } else if (fakeValueInfo != null) {
       // Skip type analysis for @FakeValue - we'll use the constant value directly
       typeInfo = TypeInfo.fakeWithFunction(
         displayString: type.getDisplayString(),
         functionName: '', // Not used, but satisfies the type
+      );
+    } else if (fakeAsInfo != null && _isDynamicOrObject(type)) {
+      // Skip type analysis for @FakeAs on dynamic/Object - we'll use the FakeAs method
+      typeInfo = TypeInfo.fakeWithFunction(
+        displayString: type.getDisplayString(),
+        functionName: '', // Not used, fakeAsMethod will be used instead
       );
     } else {
       typeInfo = _typeAnalyzer.analyze(type, param);
@@ -107,6 +137,8 @@ class FieldAnalyzer {
       fakeAsArgs: fakeAsInfo?.args,
       fakeValue: fakeValueInfo?.valueCode,
       hasFakeValue: fakeValueInfo != null,
+      fakeGeneratorClass: fakeGeneratorInfo?.className,
+      fakeGeneratorArgs: fakeGeneratorInfo?.args,
     );
   }
 
@@ -141,6 +173,80 @@ class FieldAnalyzer {
 
     final functionElement = fakeFunctionValue.toFunctionValue();
     return functionElement?.name;
+  }
+
+  /// Finds a FakeGenerator<T> subclass annotation on the field matching [paramName]
+  /// (searching class hierarchy) or on the [param] itself.
+  _FakeGeneratorInfo? _findFakeGenerator(
+    String paramName,
+    ClassElement classElement,
+    FormalParameterElement param,
+  ) {
+    // First, try to find annotation on the field in class hierarchy
+    final field = _findFieldInHierarchy(paramName, classElement);
+    if (field != null) {
+      final generatorInfo = _extractFakeGeneratorInfo(field.metadata.annotations);
+      if (generatorInfo != null) return generatorInfo;
+    }
+
+    // Fall back to checking annotation on the constructor parameter itself
+    return _extractFakeGeneratorInfo(param.metadata.annotations);
+  }
+
+  /// Extracts FakeGenerator info from element metadata.
+  /// Looks for any annotation that is a subclass of FakeGenerator<T>.
+  _FakeGeneratorInfo? _extractFakeGeneratorInfo(
+    Iterable<ElementAnnotation> metadata,
+  ) {
+    for (final annotation in metadata) {
+      final element = annotation.element;
+      if (element is ConstructorElement) {
+        final enclosingClass = element.enclosingElement;
+        if (enclosingClass is ClassElement) {
+          // Check if this class extends FakeGenerator
+          if (_isFakeGeneratorSubclass(enclosingClass)) {
+            final source = annotation.toSource();
+            // Extract constructor args from @ClassName(...) or @ClassName()
+            final match = RegExp(r'^@(\w+)\((.*)\)$').firstMatch(source);
+            if (match != null) {
+              final className = match.group(1)!;
+              final args = match.group(2)!;
+              return _FakeGeneratorInfo(
+                className: className,
+                args: args.isEmpty ? null : args,
+              );
+            }
+            // Handle @ClassName without parentheses (const annotation)
+            final simpleMatch = RegExp(r'^@(\w+)$').firstMatch(source);
+            if (simpleMatch != null) {
+              return _FakeGeneratorInfo(
+                className: simpleMatch.group(1)!,
+                args: null,
+              );
+            }
+          }
+        }
+      }
+    }
+    return null;
+  }
+
+  /// Checks if a class is a subclass of FakeGenerator.
+  bool _isFakeGeneratorSubclass(ClassElement classElement) {
+    // Check if this class or any of its supertypes is FakeGenerator
+    var current = classElement.supertype;
+    while (current != null) {
+      if (_fakeGeneratorChecker.isExactlyType(current)) {
+        return true;
+      }
+      final element = current.element;
+      if (element is ClassElement) {
+        current = element.supertype;
+      } else {
+        break;
+      }
+    }
+    return false;
   }
 
   /// Finds @FakeAs info on the field matching [paramName] (searching class hierarchy)
@@ -197,6 +303,14 @@ class FieldAnalyzer {
     }
 
     return _FakeAsInfo(method: method, args: args);
+  }
+
+  /// Checks if the type is dynamic or Object (types that need @FakeWith/@FakeAs).
+  bool _isDynamicOrObject(dynamic type) {
+    if (type is DynamicType) return true;
+    final typeStr = type.getDisplayString();
+    final baseType = typeStr.replaceAll('?', '');
+    return baseType == 'dynamic' || baseType == 'Object';
   }
 
   /// Checks if [fieldType] can accept a value of [fakeAsReturnType].
@@ -291,4 +405,11 @@ class _FakeAsInfo {
 class _FakeValueInfo {
   const _FakeValueInfo({required this.valueCode});
   final String valueCode;
+}
+
+/// Internal class to hold FakeGenerator info.
+class _FakeGeneratorInfo {
+  const _FakeGeneratorInfo({required this.className, this.args});
+  final String className;
+  final String? args;
 }

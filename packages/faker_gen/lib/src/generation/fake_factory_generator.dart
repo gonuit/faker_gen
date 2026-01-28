@@ -259,9 +259,10 @@ class FakeFactoryGenerator {
     List<FieldInfo> fields,
     FakerConfig config,
   ) {
+    final seedArg = config.seed != null ? 'seed: ${config.seed}' : '';
     final buffer =
         StringBuffer()
-          ..writeln('final f = faker ?? Faker();')
+          ..writeln('final f = faker ?? Faker($seedArg);')
           ..writeln()
           ..writeln('return ${names.originalClass}(');
 
@@ -308,6 +309,18 @@ class FakeFactoryGenerator {
     final String randomExpr;
     if (field.hasFakeValue) {
       randomExpr = field.fakeValue ?? 'null';
+    } else if (field.fakeGeneratorClass != null) {
+      // If FakeGenerator<T> subclass is present, instantiate and call generate()
+      final args = field.fakeGeneratorArgs;
+      final generatorExpr =
+          args != null && args.isNotEmpty
+              ? 'const ${field.fakeGeneratorClass}($args)'
+              : 'const ${field.fakeGeneratorClass}()';
+      randomExpr = _wrapWithNullable(
+        '$generatorExpr.generate(f)',
+        canBeNull,
+        config.nullProbability,
+      );
     } else {
       randomExpr = _buildRandomExpression(
         field.typeInfo,
@@ -321,6 +334,14 @@ class FakeFactoryGenerator {
     final castExpr = _buildCastExpression(field.name, field.typeInfo);
 
     return '$sentinelCheck ? $randomExpr : $castExpr';
+  }
+
+  /// Wraps an expression with nullable handling if needed.
+  String _wrapWithNullable(String expr, bool canBeNull, double nullProbability) {
+    if (canBeNull) {
+      return 'f.nextNullable(() => $expr, nullWeight: $nullProbability)';
+    }
+    return expr;
   }
 
   /// Builds the cast expression for converting Object? to the target type.

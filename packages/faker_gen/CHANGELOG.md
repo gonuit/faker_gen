@@ -1,5 +1,13 @@
 # Changelog
 
+## 0.3.1
+
+- Fixed `FakeGenerator<T>` example in README
+
+## 0.3.0
+
+- Added `FakeGenerator<T>` abstract class for reusable, parameterizable custom generators
+
 ## 0.2.0
 
 - Added support for `@FakeAs.alwaysNull()` to always set nullable fields to `null`
