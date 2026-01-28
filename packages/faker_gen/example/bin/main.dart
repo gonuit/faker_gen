@@ -148,4 +148,11 @@ void _printModel(CompleteModel model) {
   print('  randomDouble:      ${model.randomDouble}');
   print('  percentage:        ${model.percentage}');
   print('  price:             ${model.price}');
+
+  print('\n─── Special ───');
+  print('  appVersion:        ${model.appVersion}');
+  print('  deletedAt:         ${model.deletedAt}');
+  print('  author:            ${model.author}');
+  print('  systemAuthor:      ${model.systemAuthor}');
+  print('  adminAuthor:       ${model.adminAuthor}');
 }

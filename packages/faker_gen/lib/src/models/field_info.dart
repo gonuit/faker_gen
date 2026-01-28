@@ -16,6 +16,8 @@ final class FieldInfo {
     required this.isNamed,
     this.fakeAsMethod,
     this.fakeAsArgs,
+    this.fakeValue,
+    this.hasFakeValue = false,
   });
 
   /// The parameter/field name.
@@ -41,4 +43,11 @@ final class FieldInfo {
 
   /// The arguments to pass to the Faker method, e.g., 'count: 5'.
   final String? fakeAsArgs;
+
+  /// The constant value to use (from @FakeValue annotation).
+  /// Use [hasFakeValue] to check if this was set, since null is a valid value.
+  final String? fakeValue;
+
+  /// Whether @FakeValue annotation was present (distinguishes null value from no annotation).
+  final bool hasFakeValue;
 }

@@ -303,13 +303,21 @@ class FakeFactoryGenerator {
   }) {
     final sentinelCheck = 'identical(${field.name}, \$undefined)';
     final canBeNull = config.generateNullForNullable && field.isNullable;
-    final randomExpr = _buildRandomExpression(
-      field.typeInfo,
-      canBeNull,
-      config.nullProbability,
-      fakeAsMethod: field.fakeAsMethod,
-      fakeAsArgs: field.fakeAsArgs,
-    );
+
+    // If @FakeValue is present, use the constant value
+    final String randomExpr;
+    if (field.hasFakeValue) {
+      randomExpr = field.fakeValue ?? 'null';
+    } else {
+      randomExpr = _buildRandomExpression(
+        field.typeInfo,
+        canBeNull,
+        config.nullProbability,
+        fakeAsMethod: field.fakeAsMethod,
+        fakeAsArgs: field.fakeAsArgs,
+      );
+    }
+
     final castExpr = _buildCastExpression(field.name, field.typeInfo);
 
     return '$sentinelCheck ? $randomExpr : $castExpr';
@@ -332,6 +340,11 @@ class FakeFactoryGenerator {
     String? fakeAsMethod,
     String? fakeAsArgs,
   }) {
+    // Special case: @FakeAs.alwaysNull() always returns null
+    if (fakeAsMethod == r'$null') {
+      return 'null';
+    }
+
     // If @FakeAs annotation is present, use the specified method
     final baseExpr =
         fakeAsMethod != null

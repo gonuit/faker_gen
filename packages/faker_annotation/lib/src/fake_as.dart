@@ -499,4 +499,12 @@ class FakeAs {
           min != null || max != null
               ? '${min != null ? 'min: $min' : ''}${min != null && max != null ? ', ' : ''}${max != null ? 'max: $max' : ''}'
               : null;
+
+  // ─── Special ───────────────────────────────────────────────────────────────
+
+  /// Always sets the property to null. Only valid for nullable fields.
+  const FakeAs.alwaysNull()
+    : method = r'$null',
+      returnType = 'Null',
+      args = null;
 }

@@ -1,5 +1,14 @@
 # Changelog
 
+## 0.2.0
+
+- Added support for `@FakeAs.alwaysNull()` to always set nullable fields to `null`
+- Added support for `@FakeValue()` annotation for constant values
+  - Works with primitives (`String`, `int`, `bool`, etc.)
+  - Works with complex objects (e.g., `@FakeValue(Author(name: 'System', email: 'x@y.com'))`)
+- Added class hierarchy search for annotations
+- Annotations on constructor parameters are now supported
+
 ## 0.1.0
 
 - Initial release

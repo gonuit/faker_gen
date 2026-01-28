@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.2.0
+
+- Added `@FakeAs.alwaysNull()` annotation for always setting nullable fields to `null`
+- Added `@FakeValue()` annotation for setting constant values (primitives and complex objects)
+
 ## 0.1.0
 
 - Initial release

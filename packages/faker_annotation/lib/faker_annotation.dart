@@ -43,6 +43,7 @@ library;
 
 export 'src/fake_as.dart';
 export 'src/fake_it.dart';
+export 'src/fake_value.dart';
 export 'src/fake_with.dart';
 export 'src/faker.dart';
 export 'src/undefined.dart';

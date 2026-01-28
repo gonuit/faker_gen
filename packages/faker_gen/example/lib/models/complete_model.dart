@@ -2,6 +2,23 @@ import 'package:faker_annotation/faker_annotation.dart';
 
 part 'complete_model.g.dart';
 
+/// A simple nested model to demonstrate @FakeWith usage.
+class Author {
+  final String name;
+  final String email;
+
+  const Author({required this.name, required this.email});
+
+  @override
+  String toString() => 'Author(name: $name, email: $email)';
+}
+
+/// Custom fake function for Author.
+Author fakeAuthor(Faker f) => Author(
+      name: f.nextFullName(),
+      email: f.nextEmail(),
+    );
+
 /// A comprehensive model demonstrating all FakeAs annotation types.
 ///
 /// This model showcases every available FakeAs generator for fake data.
@@ -299,6 +316,23 @@ class CompleteModel {
   @FakeAs.decimal(min: 9.99, max: 999.99)
   final double price;
 
+  // ─── Special ───────────────────────────────────────────────────────────────
+
+  @FakeValue('v1.0.0')
+  final String appVersion;
+
+  @FakeAs.alwaysNull()
+  final String? deletedAt;
+
+  @FakeWith(fakeAuthor)
+  final Author author;
+
+  @FakeValue(Author(name: 'System', email: 'system@example.com'))
+  final Author systemAuthor;
+
+  @FakeValue(Author(name: 'Admin', email: 'admin@example.com'))
+  final Author adminAuthor;
+
   CompleteModel({
     required this.randomString,
     required this.prefixedString,
@@ -384,5 +418,10 @@ class CompleteModel {
     required this.randomDouble,
     required this.percentage,
     required this.price,
+    required this.appVersion,
+    this.deletedAt,
+    required this.author,
+    required this.systemAuthor,
+    required this.adminAuthor,
   });
 }

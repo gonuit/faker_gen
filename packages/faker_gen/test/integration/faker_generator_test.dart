@@ -22,9 +22,23 @@ class FakeWith {
   final Function fakeFunction;
 }
 
+class FakeAs {
+  final String method;
+  final String returnType;
+  final String? args;
+  
+  const FakeAs.uuid() : method = 'nextUuid', returnType = 'String', args = null;
+}
+
+class FakeValue {
+  const FakeValue(this.value);
+  final Object? value;
+}
+
 class Faker {
   Faker([int? seed]);
   String nextString() => '';
+  String nextUuid() => '';
   int nextInt() => 0;
   double nextDouble() => 0.0;
   num nextNum() => 0;
@@ -576,6 +590,113 @@ class CustomUser {
       });
     });
 
+    group('@FakeValue annotation', () {
+      test('generates fake with constant string value', () async {
+        await testBuilder(
+          fakerBuilder(BuilderOptions.empty),
+          {
+            'a|lib/faker_annotation.dart': _fakeItSource,
+            'a|lib/config.dart': r'''
+import 'faker_annotation.dart';
+
+@FakeIt()
+class Config {
+  @FakeValue('production')
+  final String environment;
+  Config({required this.environment});
+}
+''',
+          },
+          outputs: {
+            'a|lib/config.faker.g.part': decodedContainsAll([
+              "identical(environment, \$undefined)",
+              "'production'",
+            ]),
+          },
+          rootPackage: 'a',
+        );
+      });
+
+      test('generates fake with constant int value', () async {
+        await testBuilder(
+          fakerBuilder(BuilderOptions.empty),
+          {
+            'a|lib/faker_annotation.dart': _fakeItSource,
+            'a|lib/settings.dart': r'''
+import 'faker_annotation.dart';
+
+@FakeIt()
+class Settings {
+  @FakeValue(42)
+  final int maxRetries;
+  Settings({required this.maxRetries});
+}
+''',
+          },
+          outputs: {
+            'a|lib/settings.faker.g.part': decodedContainsAll([
+              'identical(maxRetries, \$undefined)',
+              '? 42',
+            ]),
+          },
+          rootPackage: 'a',
+        );
+      });
+
+      test('generates fake with constant bool value', () async {
+        await testBuilder(
+          fakerBuilder(BuilderOptions.empty),
+          {
+            'a|lib/faker_annotation.dart': _fakeItSource,
+            'a|lib/feature.dart': r'''
+import 'faker_annotation.dart';
+
+@FakeIt()
+class Feature {
+  @FakeValue(true)
+  final bool enabled;
+  Feature({required this.enabled});
+}
+''',
+          },
+          outputs: {
+            'a|lib/feature.faker.g.part': decodedContainsAll([
+              'identical(enabled, \$undefined)',
+              '? true',
+            ]),
+          },
+          rootPackage: 'a',
+        );
+      });
+
+      test('generates fake with null value', () async {
+        await testBuilder(
+          fakerBuilder(BuilderOptions.empty),
+          {
+            'a|lib/faker_annotation.dart': _fakeItSource,
+            'a|lib/optional.dart': r'''
+import 'faker_annotation.dart';
+
+@FakeIt()
+class Optional {
+  @FakeValue(null)
+  final String? maybeValue;
+  Optional({this.maybeValue});
+}
+''',
+          },
+          outputs: {
+            'a|lib/optional.faker.g.part': decodedContainsAll([
+              'identical(maybeValue, \$undefined)',
+              '? null',
+              ': maybeValue as String?',
+            ]),
+          },
+          rootPackage: 'a',
+        );
+      });
+    });
+
     group('generated code structure', () {
       test('generates code with shared sentinel', () async {
         await testBuilder(
@@ -677,6 +798,222 @@ class Item {
             'a|lib/item.faker.g.part': decodedContainsAll([
               '/// Fake factory for [Item]',
               r'const fakeItem = _$FakeItemImpl();',
+            ]),
+          },
+          rootPackage: 'a',
+        );
+      });
+
+      test('only generates for constructor parameters, not all class fields', () async {
+        await testBuilder(
+          fakerBuilder(BuilderOptions.empty),
+          {
+            'a|lib/faker_annotation.dart': _fakeItSource,
+            'a|lib/user.dart': r'''
+import 'faker_annotation.dart';
+
+@FakeIt()
+class User {
+  final String name;
+  final int age;
+  final String? nickname; // Not in constructor - should be ignored
+
+  User({required this.name, required this.age});
+}
+''',
+          },
+          outputs: {
+            'a|lib/user.faker.g.part': allOf([
+              decodedContainsAll([
+                'String name',
+                'int age',
+                'name: identical(name, \$undefined) ? f.nextString() : name as String',
+                'age: identical(age, \$undefined) ? f.nextInt() : age as int',
+              ]),
+              // Should NOT contain nickname since it's not in constructor
+              isNot(decodedContains('nickname')),
+            ]),
+          },
+          rootPackage: 'a',
+        );
+      });
+
+      test('supports annotations on super constructor parameters', () async {
+        await testBuilder(
+          fakerBuilder(BuilderOptions.empty),
+          {
+            'a|lib/faker_annotation.dart': _fakeItSource,
+            'a|lib/models.dart': r'''
+import 'faker_annotation.dart';
+
+Map<String, dynamic> mockPayment(Faker f) => {'method': 'card'};
+
+class BaseOrder {
+  final String orderId;
+  final Map<String, dynamic> payment;
+  BaseOrder({required this.orderId, required this.payment});
+}
+
+@FakeIt()
+class Order extends BaseOrder {
+  final String name;
+
+  Order({
+    required this.name,
+    @FakeAs.uuid()
+    required String orderId,
+    @FakeWith(mockPayment)
+    required Map<String, dynamic> payment,
+  }) : super(orderId: orderId, payment: payment);
+}
+''',
+          },
+          outputs: {
+            'a|lib/models.faker.g.part': decodedContainsAll([
+              // Should use @FakeAs.uuid() on the orderId parameter
+              'f.nextUuid()',
+              // Should use @FakeWith(mockPayment) on the payment parameter
+              'mockPayment(f)',
+            ]),
+          },
+          rootPackage: 'a',
+        );
+      });
+
+      test('finds annotations on parent class fields', () async {
+        await testBuilder(
+          fakerBuilder(BuilderOptions.empty),
+          {
+            'a|lib/faker_annotation.dart': _fakeItSource,
+            'a|lib/models.dart': r'''
+import 'faker_annotation.dart';
+
+Map<String, dynamic> mockPayment(Faker f) => {'method': 'card'};
+
+class BaseOrder {
+  @FakeAs.uuid()
+  final String orderId;
+  @FakeWith(mockPayment)
+  final Map<String, dynamic> payment;
+  BaseOrder({required this.orderId, required this.payment});
+}
+
+@FakeIt()
+class Order extends BaseOrder {
+  final String name;
+
+  // No annotations needed on constructor params - found on parent class fields
+  Order({
+    required this.name,
+    required super.orderId,
+    required super.payment,
+  });
+}
+''',
+          },
+          outputs: {
+            'a|lib/models.faker.g.part': decodedContainsAll([
+              // Should find @FakeAs.uuid() on BaseOrder.orderId
+              'f.nextUuid()',
+              // Should find @FakeWith(mockPayment) on BaseOrder.payment
+              'mockPayment(f)',
+            ]),
+          },
+          rootPackage: 'a',
+        );
+      });
+
+      test('supports Freezed-style factory constructors', () async {
+        await testBuilder(
+          fakerBuilder(BuilderOptions.empty),
+          {
+            'a|lib/faker_annotation.dart': _fakeItSource,
+            'a|lib/app_file.dart': r'''
+import 'faker_annotation.dart';
+
+// Simulating Freezed-generated mixin
+mixin _$AppFile {
+  String? get fileName;
+  String? get fileType;
+}
+
+@FakeIt()
+abstract class AppFile with _$AppFile {
+  const factory AppFile({
+    String? fileName,
+    String? fileType,
+  }) = _AppFile;
+}
+
+// Simulating Freezed-generated implementation
+class _AppFile with _$AppFile implements AppFile {
+  const _AppFile({this.fileName, this.fileType});
+  
+  @override
+  final String? fileName;
+  @override
+  final String? fileType;
+}
+''',
+          },
+          outputs: {
+            'a|lib/app_file.faker.g.part': allOf([
+              decodedContainsAll([
+                'fakeAppFile',
+                'fileName',
+                'fileType',
+              ]),
+              // IMPORTANT: Should use public AppFile constructor, NOT _AppFile
+              decodedContains('return AppFile('),
+              // Should NOT use the private redirected class
+              isNot(decodedContains('return _AppFile(')),
+            ]),
+          },
+          rootPackage: 'a',
+        );
+      });
+
+      test('supports annotations on Freezed-style factory constructor params', () async {
+        await testBuilder(
+          fakerBuilder(BuilderOptions.empty),
+          {
+            'a|lib/faker_annotation.dart': _fakeItSource,
+            'a|lib/app_file.dart': r'''
+import 'faker_annotation.dart';
+
+String fakeFileName(Faker f) => 'test.pdf';
+
+// Simulating Freezed-generated mixin
+mixin _$AppFile {
+  String? get fileName;
+  String? get fileId;
+}
+
+@FakeIt()
+abstract class AppFile with _$AppFile {
+  const factory AppFile({
+    @FakeWith(fakeFileName) String? fileName,
+    @FakeAs.uuid() String? fileId,
+  }) = _AppFile;
+}
+
+// Simulating Freezed-generated implementation
+class _AppFile with _$AppFile implements AppFile {
+  const _AppFile({this.fileName, this.fileId});
+  
+  @override
+  final String? fileName;
+  @override
+  final String? fileId;
+}
+''',
+          },
+          outputs: {
+            'a|lib/app_file.faker.g.part': decodedContainsAll([
+              // Should use @FakeWith on factory constructor param
+              'fakeFileName(f)',
+              // Should use @FakeAs.uuid() on factory constructor param
+              'f.nextUuid()',
             ]),
           },
           rootPackage: 'a',

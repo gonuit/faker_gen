@@ -103,6 +103,11 @@ abstract mixin class _$FakeCompleteModel {
     double randomDouble,
     double percentage,
     double price,
+    String appVersion,
+    String? deletedAt,
+    Author author,
+    Author systemAuthor,
+    Author adminAuthor,
   });
 
   /// Generates [count] fake instances of [CompleteModel].
@@ -199,6 +204,11 @@ class _$FakeCompleteModelImpl with _$FakeCompleteModel {
     Object randomDouble = $undefined,
     Object percentage = $undefined,
     Object price = $undefined,
+    Object appVersion = $undefined,
+    Object? deletedAt = $undefined,
+    Object author = $undefined,
+    Object systemAuthor = $undefined,
+    Object adminAuthor = $undefined,
   }) {
     final f = faker ?? Faker();
 
@@ -493,6 +503,18 @@ class _$FakeCompleteModelImpl with _$FakeCompleteModel {
           identical(price, $undefined)
               ? f.nextDouble(min: 9.99, max: 999.99)
               : (price as num).toDouble(),
+      appVersion:
+          identical(appVersion, $undefined) ? 'v1.0.0' : appVersion as String,
+      deletedAt: identical(deletedAt, $undefined) ? null : deletedAt as String?,
+      author: identical(author, $undefined) ? fakeAuthor(f) : author as Author,
+      systemAuthor:
+          identical(systemAuthor, $undefined)
+              ? Author(name: 'System', email: 'system@example.com')
+              : systemAuthor as Author,
+      adminAuthor:
+          identical(adminAuthor, $undefined)
+              ? Author(name: 'Admin', email: 'admin@example.com')
+              : adminAuthor as Author,
     );
   }
 
