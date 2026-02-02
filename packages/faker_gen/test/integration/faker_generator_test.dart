@@ -37,9 +37,9 @@ class User {
           outputs: {
             'user_pkg|lib/user.faker.g.part': decodedContainsAll([
               r'$undefined', // shared sentinel
-              r'abstract mixin class _$FakeUser',
+              r'abstract class _$FakeUser',
               r'class _$FakeUserImpl',
-              'const fakeUser = _\$FakeUserImpl()',
+              'const _\$FakeUser fakeUser = _\$FakeUserImpl()',
               'f.nextString()',
             ]),
           },
@@ -693,7 +693,7 @@ class Item {
           outputs: {
             'user_pkg|lib/item.faker.g.part': decodedContainsAll([
               '/// Creates a fake instance of [Item]',
-              r'abstract mixin class _$FakeItem',
+              r'abstract class _$FakeItem',
               'Item call({',
               'Faker? faker',
               'String id',
@@ -720,7 +720,7 @@ class Item {
           },
           outputs: {
             'user_pkg|lib/item.faker.g.part': decodedContainsAll([
-              r'class _$FakeItemImpl with _$FakeItem',
+              r'class _$FakeItemImpl implements _$FakeItem',
               r'const _$FakeItemImpl();',
               '@override',
               r'Object id = $undefined',
@@ -749,7 +749,7 @@ class Item {
           outputs: {
             'user_pkg|lib/item.faker.g.part': decodedContainsAll([
               '/// Fake factory for [Item]',
-              r'const fakeItem = _$FakeItemImpl();',
+              r'const _$FakeItem fakeItem = _$FakeItemImpl();',
             ]),
           },
           rootPackage: 'user_pkg',

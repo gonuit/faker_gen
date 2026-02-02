@@ -40,9 +40,9 @@ void main() {
           result,
           isNot(contains('class _\$UserSentinel')),
         ); // no per-class sentinel
-        expect(result, contains('abstract mixin class _\$FakeUser'));
+        expect(result, contains('abstract class _\$FakeUser'));
         expect(result, contains('class _\$FakeUserImpl'));
-        expect(result, contains('const fakeUser = _\$FakeUserImpl()'));
+        expect(result, contains('const _\$FakeUser fakeUser = _\$FakeUserImpl()'));
         expect(result, contains('f.nextString()'));
       });
 

@@ -7,6 +7,7 @@ part of 'example.dart';
 // **************************************************************************
 
 // ignore_for_file: unused_element
+// ignore_for_file: library_private_types_in_public_api
 
 /// Creates a fake instance of [User] with random or provided values.
 ///
@@ -16,7 +17,7 @@ part of 'example.dart';
 /// - Explicitly null (for nullable fields): null is set
 ///
 /// [faker] - Optional [Faker] instance for reproducible random values.
-abstract mixin class _$FakeUser {
+abstract class _$FakeUser {
   User call({
     Faker? faker,
     String id,
@@ -51,7 +52,7 @@ abstract mixin class _$FakeUser {
   Iterable<User> many(int count, {Faker? faker});
 }
 
-class _$FakeUserImpl with _$FakeUser {
+class _$FakeUserImpl implements _$FakeUser {
   const _$FakeUserImpl();
 
   @override
@@ -180,4 +181,4 @@ class _$FakeUserImpl with _$FakeUser {
 /// Fake factory for [User].
 ///
 /// Use like a function: `fakeUser()` or `fakeUser(field: value)`
-const fakeUser = _$FakeUserImpl();
+const _$FakeUser fakeUser = _$FakeUserImpl();

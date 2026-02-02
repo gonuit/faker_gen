@@ -7,6 +7,7 @@ part of 'complete_model.dart';
 // **************************************************************************
 
 // ignore_for_file: unused_element
+// ignore_for_file: library_private_types_in_public_api
 
 /// Creates a fake instance of [CompleteModel] with random or provided values.
 ///
@@ -16,7 +17,7 @@ part of 'complete_model.dart';
 /// - Explicitly null (for nullable fields): null is set
 ///
 /// [faker] - Optional [Faker] instance for reproducible random values.
-abstract mixin class _$FakeCompleteModel {
+abstract class _$FakeCompleteModel {
   CompleteModel call({
     Faker? faker,
     String randomString,
@@ -114,7 +115,7 @@ abstract mixin class _$FakeCompleteModel {
   Iterable<CompleteModel> many(int count, {Faker? faker});
 }
 
-class _$FakeCompleteModelImpl with _$FakeCompleteModel {
+class _$FakeCompleteModelImpl implements _$FakeCompleteModel {
   const _$FakeCompleteModelImpl();
 
   @override
@@ -527,4 +528,4 @@ class _$FakeCompleteModelImpl with _$FakeCompleteModel {
 /// Fake factory for [CompleteModel].
 ///
 /// Use like a function: `fakeCompleteModel()` or `fakeCompleteModel(field: value)`
-const fakeCompleteModel = _$FakeCompleteModelImpl();
+const _$FakeCompleteModel fakeCompleteModel = _$FakeCompleteModelImpl();

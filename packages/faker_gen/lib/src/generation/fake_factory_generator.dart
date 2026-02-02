@@ -52,9 +52,10 @@ class FakeFactoryGenerator {
 
     final code = library.accept(_emitter).toString();
 
-    // Add ignore comment (no import needed - $undefined is available from
+    // Add ignore comments (no import needed - $undefined is available from
     // faker_annotation which the parent file imports for @FakeIt)
-    final fullCode = '// ignore_for_file: unused_element\n\n$code';
+    final fullCode = '// ignore_for_file: unused_element\n'
+        '// ignore_for_file: library_private_types_in_public_api\n\n$code';
 
     return _formatter.format(fullCode);
   }
@@ -66,7 +67,6 @@ class FakeFactoryGenerator {
           b
             ..name = names.interfaceClass
             ..abstract = true
-            ..mixin = true
             ..docs.addAll([
               '/// Creates a fake instance of [${names.originalClass}] with random or provided values.',
               '///',
@@ -129,7 +129,7 @@ class FakeFactoryGenerator {
       (b) =>
           b
             ..name = names.implClass
-            ..mixins.add(refer(names.interfaceClass))
+            ..implements.add(refer(names.interfaceClass))
             ..constructors.add(Constructor((c) => c..constant = true))
             ..methods.addAll([
               Method((m) {
@@ -287,7 +287,7 @@ class FakeFactoryGenerator {
           b
             ..name = names.factoryConst
             ..modifier = FieldModifier.constant
-            // ..type = refer(names.interfaceClass)
+            ..type = refer(names.interfaceClass)
             ..assignment = Code('${names.implClass}()')
             ..docs.addAll([
               '/// Fake factory for [${names.originalClass}].',

@@ -3,6 +3,10 @@
 ## 0.3.1
 
 - Fixed `FakeGenerator<T>` example in README
+- Changed generated fake interface from `abstract mixin class` to `abstract class`
+- Changed implementation class to use `implements` instead of `with`
+- Added explicit type annotation to factory constant declaration
+- Added `library_private_types_in_public_api` lint ignore to generated files
 
 ## 0.3.0
 

@@ -180,10 +180,11 @@ packages:
   faker_annotation:
     dependency: "direct main"
     description:
-      path: "../faker_annotation"
-      relative: true
-    source: path
-    version: "0.3.0"
+      name: faker_annotation
+      sha256: d1459ed24edf5189d95c834bff283435a5a3b76f8792de27625dfb18c9c8d333
+      url: "https://pub.dev"
+    source: hosted
+    version: "0.3.1"
   file:
     dependency: transitive
     description:
