@@ -1,5 +1,8 @@
 # Changelog
 
+## 0.3.3
+- Widened `analyzer` constraint to `<15.0.0` and `build` to `<6.0.0`
+
 ## 0.3.2
 - Updated package dependencies
 
